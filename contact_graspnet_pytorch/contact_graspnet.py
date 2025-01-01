@@ -11,13 +11,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
 
 sys.path.append(os.path.join(BASE_DIR))
-sys.path.append(os.path.join(BASE_DIR, 'Pointnet_Pointnet2_pytorch'))
+# sys.path.append(os.path.join(BASE_DIR, 'Pointnet_Pointnet2_pytorch'))
 # sys.path.append(os.path.join(BASE_DIR, 'pointnet2', 'utils'))
 
 # from tf_sampling import farthest_point_sample, gather_point
 # from tf_grouping import query_ball_point, group_point, knn_point
 
-from models.pointnet2_utils import PointNetSetAbstractionMsg, PointNetSetAbstraction, PointNetFeaturePropagation
+from Pointnet_Pointnet2_pytorch.models.pointnet2_utils import PointNetSetAbstractionMsg, PointNetSetAbstraction, PointNetFeaturePropagation
 from contact_graspnet_pytorch import mesh_utils, utils
 
 class ContactGraspnet(nn.Module):

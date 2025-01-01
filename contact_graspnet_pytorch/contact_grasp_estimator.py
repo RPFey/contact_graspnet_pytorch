@@ -202,8 +202,6 @@ class GraspEstimator:
         pred_points = pred['pred_points']
         offset_pred = pred['offset_pred']
 
-
-
         pred_grasps_cam = pred_grasps_cam.detach().cpu().numpy()
         pred_scores = pred_scores.detach().cpu().numpy()
         pred_points = pred_points.detach().cpu().numpy()
@@ -219,12 +217,12 @@ class GraspEstimator:
         pred_points[:,:3] += pc_mean.reshape(-1,3)
 
         if constant_offset:
-            offset_pred = np.array([[self._contact_grasp_cfg['DATA']['gripper_width']-self._contact_grasp_cfg['TEST']['extra_opening']]*self._contact_grasp_cfg['DATA']['num_point']])
+            offset_pred = np.array([[
+                self._contact_grasp_cfg['DATA']['gripper_width'] - self._contact_grasp_cfg['TEST']['extra_opening']] * self._contact_grasp_cfg['DATA']['num_point']])
         
         gripper_openings = np.minimum(offset_pred + self._contact_grasp_cfg['TEST']['extra_opening'], self._contact_grasp_cfg['DATA']['gripper_width'])
 
         with_replacement = self._contact_grasp_cfg['TEST']['with_replacement'] if 'with_replacement' in self._contact_grasp_cfg['TEST'] else False
-        
         selection_idcs = self.select_grasps(pred_points[:,:3], pred_scores, 
                                             self._contact_grasp_cfg['TEST']['max_farthest_points'], 
                                             self._contact_grasp_cfg['TEST']['num_samples'], 
@@ -236,12 +234,12 @@ class GraspEstimator:
             selection_idcs=np.array([], dtype=np.int32)
 
         if 'center_to_tip' in self._contact_grasp_cfg['TEST'] and self._contact_grasp_cfg['TEST']['center_to_tip']:
-            pred_grasps_cam[:,:3, 3] -= pred_grasps_cam[:,:3,2]*(self._contact_grasp_cfg['TEST']['center_to_tip']/2)
+            pred_grasps_cam[:, :3, 3] -= pred_grasps_cam[:, :3, 2] * ( self._contact_grasp_cfg['TEST']['center_to_tip'] / 2 )
         
         # convert back to opencv coordinates
         if convert_cam_coords:
-            pred_grasps_cam[:,:2, :] *= -1
-            pred_points[:,:2] *= -1
+            pred_grasps_cam[:, :2, :] *= -1
+            pred_points[:, :2] *= -1
 
         return pred_grasps_cam[selection_idcs], pred_scores[selection_idcs], pred_points[selection_idcs].squeeze(), gripper_openings[selection_idcs].squeeze()
 
@@ -399,7 +397,7 @@ class GraspEstimator:
                         print('object {} not entirely in image bounds, skipping'.format(i))
                         continue
                 inst_mask = segmap==i
-                pc_segment,_ = depth2pc(depth*inst_mask, K)
+                pc_segment, _ = depth2pc(depth*inst_mask, K)
                 pc_segments[i] = pc_segment[(pc_segment[:,2] < z_range[1]) & (pc_segment[:,2] > z_range[0])] #regularize_pc_point_count(pc_segment, grasp_estimator._contact_grasp_cfg['DATA']['num_point'])
 
         return pc_full, pc_segments, pc_colors

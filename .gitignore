@@ -11,4 +11,4 @@ acronym/*
 !acronym/*.py
 
 *.egg-info
-
+build/
