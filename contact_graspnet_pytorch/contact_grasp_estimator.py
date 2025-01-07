@@ -4,6 +4,7 @@ import torch
 import sys
 import os
 import time
+import logging
 
 from contact_graspnet_pytorch import config_utils
 from contact_graspnet_pytorch.data import farthest_points, \
@@ -39,6 +40,7 @@ class GraspEstimator:
         #                                                         self._num_input_points, 
         #                                                         self._contact_grasp_cfg['DATA']['input_normals'])
         # self.model_ops = {}
+        self.model_fn = None
 
     def build_network(self):
         """
@@ -196,7 +198,12 @@ class GraspEstimator:
 
         # Run model inference
         # pred_grasps_cam, pred_scores, pred_points, offset_pred = sess.run(self.inference_ops, feed_dict=feed_dict)
-        pred = self.model(pc_batch)
+        if self.model_fn is None:
+            self.model_fn = torch.compile(self.model)
+
+        pred = self.model_fn(pc_batch)
+        # pred = self.model(pc_batch)
+        
         pred_grasps_cam = pred['pred_grasps_cam']
         pred_scores = pred['pred_scores']
         pred_points = pred['pred_points']
@@ -273,6 +280,7 @@ class GraspEstimator:
                 pc_regions = self.filter_pc_segments(pc_segments) 
             for k, pc_region in pc_regions.items():
                 pred_grasps_cam[k], scores[k], contact_pts[k], gripper_openings[k] = self.predict_grasps(pc_region, convert_cam_coords=True, forward_passes=forward_passes)
+        
         else:
             print('using full pc')
             pc_full = regularize_pc_point_count(pc_full, self._contact_grasp_cfg['DATA']['raw_num_points'])
@@ -290,6 +298,9 @@ class GraspEstimator:
                     pred_grasps_cam[k] = pred_grasps_cam[j][segment_idcs]
                     scores[k] = scores[j][segment_idcs]
                     contact_pts[k] = contact_pts[j][segment_idcs]
+
+                    if pred_grasps_cam[k].shape[0] == 0:
+                        logging.warning(f"No grasps found for object {k} after filtering with threshold {self._contact_grasp_cfg['TEST']['filter_thres']}")
                     try:
                         gripper_openings[k] = gripper_openings[j][segment_idcs]
                     except:
