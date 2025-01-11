@@ -40,7 +40,8 @@ class GraspEstimator:
         #                                                         self._num_input_points, 
         #                                                         self._contact_grasp_cfg['DATA']['input_normals'])
         # self.model_ops = {}
-        self.model_fn = None
+        self.model_fn = torch.compile(self.model)
+        # self.model_fn = None
 
     def build_network(self):
         """
@@ -198,11 +199,11 @@ class GraspEstimator:
 
         # Run model inference
         # pred_grasps_cam, pred_scores, pred_points, offset_pred = sess.run(self.inference_ops, feed_dict=feed_dict)
-        if self.model_fn is None:
-            self.model_fn = torch.compile(self.model)
+        # if self.model_fn is None:
+            
 
-        pred = self.model_fn(pc_batch)
-        # pred = self.model(pc_batch)
+        # pred = self.model_fn(pc_batch)
+        pred = self.model(pc_batch)
         
         pred_grasps_cam = pred['pred_grasps_cam']
         pred_scores = pred['pred_scores']
