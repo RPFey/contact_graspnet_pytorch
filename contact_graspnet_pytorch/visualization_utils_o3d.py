@@ -139,9 +139,12 @@ def visualize_grasps(full_pc, pred_grasps_cam, scores, plot_opencv_cam=False, pc
     """
 
     print('Visualizing...')
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(full_pc)
-    pcd.colors = o3d.utility.Vector3dVector(pc_colors.astype(np.float64) / 255)
+    if isinstance(full_pc, o3d.geometry.PointCloud):
+        pcd = full_pc
+    else:
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(full_pc)
+        pcd.colors = o3d.utility.Vector3dVector(pc_colors.astype(np.float64) / 255)
 
     vis = o3d.visualization.Visualizer()
     vis.create_window()
@@ -255,7 +258,7 @@ def draw_grasps(vis, grasps, cam_pose, gripper_openings, colors=[(0, 1., 0)], sh
     index = 0
     N = 7
     color_arr = []
-    for i,(g,g_opening) in enumerate(zip(grasps, gripper_openings)):
+    for i,(g, g_opening) in enumerate(zip(grasps, gripper_openings)):
         gripper_control_points_closed = grasp_line_plot.copy()
         gripper_control_points_closed[2:,0] = np.sign(grasp_line_plot[2:,0]) * g_opening/2
 
@@ -292,6 +295,11 @@ def draw_grasps(vis, grasps, cam_pose, gripper_openings, colors=[(0, 1., 0)], sh
     colors = np.repeat(colors, N - 1, axis=0)
     line_set.colors = o3d.utility.Vector3dVector(colors)
     # line_set.paint_uniform_color(color)  # Set line color
+    
+    for g in grasps:
+        sample_coord = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.02, origin=[0., 0, 0])
+        sample_coord.transform(g)
+        vis.add_geometry(sample_coord)
 
     # mat = o3d.visualization.rendering.MaterialRecord()
     # mat.shader = "unlitLine"

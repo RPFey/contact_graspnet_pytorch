@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from time import time
 import numpy as np
+from pytorch3d.ops import ball_query
 
 def timeit(tag, t):
     print("{}: {}s".format(tag, time() - t))
@@ -39,7 +40,7 @@ def square_distance(src, dst):
     dist += torch.sum(dst ** 2, -1).view(B, 1, M)
     return dist
 
-
+@torch.no_grad()
 def index_points(points, idx):
     """
 
@@ -83,7 +84,7 @@ def farthest_point_sample(xyz, npoint):
         farthest = torch.max(distance, -1)[1]
     return centroids
 
-
+@torch.no_grad()
 def query_ball_point(radius, nsample, xyz, new_xyz):
     """
     Input:
@@ -104,6 +105,7 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     group_first = group_idx[:, :, 0].view(B, S, 1).repeat([1, 1, nsample])
     mask = group_idx == N
     group_idx[mask] = group_first[mask]
+    torch.cuda.empty_cache()
     return group_idx
 
 
@@ -238,9 +240,18 @@ class PointNetSetAbstractionMsg(nn.Module):
         S = self.npoint
         new_xyz = index_points(xyz, farthest_point_sample(xyz, S))
         new_points_list = []
+        # import pdb; pdb.set_trace()
         for i, radius in enumerate(self.radius_list):
             K = self.nsample_list[i]
-            group_idx = query_ball_point(radius, K, xyz, new_xyz)
+            
+            # new code
+            _, group_idx, _ = ball_query(new_xyz, xyz, K = K, radius = radius)
+            pad_x, pad_y, pad_z = torch.where(group_idx == -1)
+            group_idx[pad_x, pad_y, pad_z] = group_idx[pad_x, pad_y, torch.zeros_like(pad_x)]
+            
+            # legact code
+            # group_idx = query_ball_point(radius, K, xyz, new_xyz)
+            
             grouped_xyz = index_points(xyz, group_idx)
             grouped_xyz -= new_xyz.view(B, S, 1, C)
             if points is not None:
