@@ -210,6 +210,36 @@ def regularize_pc_point_count(pc, npoints, use_farthest_point=False):
             pc = np.concatenate((pc, pc[index, :]), axis=0)
     return pc
 
+def regularize_pc_point_count_index(pc, npoints, use_farthest_point=False):
+    """
+      If point cloud pc has less points than npoints, it oversamples.
+      Otherwise, it downsample the input pc to have npoint points.
+      use_farthest_point: indicates 
+      
+      :param pc: Nx3 point cloud
+      :param npoints: number of points the regularized point cloud should have
+      :param use_farthest_point: use farthest point sampling to downsample the points, runs slower.
+      :returns: 
+        npointsx3 regularized point cloud 
+        index: indexes of the points in the original point cloud
+    """
+    
+    if pc.shape[0] > npoints:
+        if use_farthest_point:
+            _, center_indexes = farthest_points(pc, npoints, distance_by_translation_point, return_center_indexes=True)
+        else:
+            center_indexes = np.random.choice(range(pc.shape[0]), size=npoints, replace=False)
+        pc = pc[center_indexes, :]
+    else:
+        required = npoints - pc.shape[0]
+        center_indexes = np.arange(pc.shape[0])
+        if required > 0:
+            index = np.random.choice(range(pc.shape[0]), size=required)
+            pc = np.concatenate((pc, pc[index, :]), axis=0)
+            center_indexes = np.concatenate((center_indexes, index), axis=0)
+
+    return pc, center_indexes
+
 def depth2pc(depth, K, rgb=None):
     """
     Convert depth and intrinsics to point cloud and optionally point cloud color
